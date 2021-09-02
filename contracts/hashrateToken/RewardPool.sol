@@ -66,10 +66,20 @@ contract RewardPool is
         address _lendingPool,
         uint256 _duration
     ) public {
-        RewardDistributionRecipient._initialize(msg.sender);
+        _initialize(_name, _rewardToken, _lockToken, _lendingPool, _duration);
+    }
+
+    function _initialize(
+        string memory _name,
+        address _rewardToken,
+        address _lockToken,
+        address _lendingPool,
+        uint256 _duration
+    ) internal initializer {
+        __RewardDistributionRecipient_init(msg.sender);
+        __LockTokenWrapper_init(_lockToken);
         name = _name;
         rewardToken = IERC20Upgradeable(_rewardToken);
-        lockToken = IERC20Upgradeable(_lockToken);
         duration = _duration;
         lendingPool = _lendingPool;
     }

@@ -11,7 +11,7 @@ const secretTest = process.env.SECRETKEYTEST || '';
 const SKIP_LOAD = process.env.SKIP_LOAD === 'true';
 
 require(`${path.join(__dirname, 'tasks')}/deploy.ts`);
-require(`${path.join(__dirname, 'tasks')}/store.ts`);
+require(`${path.join(__dirname, 'tasks')}/access.ts`);
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more

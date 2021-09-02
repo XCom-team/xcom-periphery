@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import { deployContract, getContract } from "../helpers/contracts-deploy";
 import { setHardHatEnv } from "../helpers/utils";
-import { storePrepare, showStore, showRewardPool } from "../helpers/hashrate-contracts";
+import { storePrepare, showStore, showRewardPool, connectProxyAdmin, connectRewardPool } from "../helpers/hashrate-contracts";
 
 type tplotOptions = {
     [key: string]: string
@@ -89,20 +89,48 @@ task("rewardpool", "Deploy reward pool & proxy", async (args, hre) => {
     const logicContract = deployContract("RewardPool", [], true);
     const logic = (await logicContract).address;
     
-    const adminXFT = (await deployContract("ProxyAdmin", [], true)).address;
-    const adminXFTI = (await deployContract("ProxyAdmin", [], true)).address;
+    //const adminXFT = (await deployContract("ProxyAdmin", [], true)).address;
+    //const adminXFTI = (await deployContract("ProxyAdmin", [], true)).address;
+    const admin = "0xE89c1EC76CD30B05c24C13d2020BC6ed77279ccb";
     const xftPara = ["XFT Reward Pool", FIL[network], XFT[network], LENDINGPOOL[network],604800];
     const xftEncodedInitialize = (await logicContract).interface.encodeFunctionData('initialize', xftPara);
     const xftiPara = ["XFTI Reward Pool", FIL[network], XFTI[network], LENDINGPOOL[network], 604800];
     const xftiEncodedInitialize = (await logicContract).interface.encodeFunctionData('initialize', xftiPara);
-    const xftProxy = deployContract("TransparentUpgradeableProxy",[logic, adminXFT, xftEncodedInitialize], true);
+    const xftProxy = deployContract("TransparentUpgradeableProxy",[logic, admin, xftEncodedInitialize], true);
     const proxyXFT = (await xftProxy).address;
-    const xftiProxy = deployContract("TransparentUpgradeableProxy",[logic, adminXFTI, xftiEncodedInitialize], true);
+    const xftiProxy = deployContract("TransparentUpgradeableProxy",[logic, admin, xftiEncodedInitialize], true);
     const proxyXFTI = (await xftiProxy).address;
     
     console.log("Reward Pool\n\tContract Logic deployed @ %s\n", logic);
-    console.log("XFT\n\tContract admin deployed @ %s\n\tContract proxy deployed @ %s\n",adminXFT, proxyXFT);
-    console.log("XFTI\n\tContract admin deployed @ %s\n\tContract proxy deployed @ %s\n",adminXFTI, proxyXFTI);
+    console.log("\tContract admin deployed @ %s", admin);
+    console.log("XFT\n\tContract proxy deployed @ %s\n", proxyXFT);
+    console.log("XFTI\n\tContract proxy deployed @ %s\n", proxyXFTI);
     showRewardPool(proxyXFT);
     showRewardPool(proxyXFTI);
 })
+
+task("updatestore", "Update store logic", async (args, hre) => {
+    setHardHatEnv(hre);
+    const network = hre.network.name;
+    const admin = "0x546468C4569B7b87Fe4b76E1F386Cf15c03a8cF8";
+    const proxy = "0xA029a96BFBb686AB742FD9C67fEe11e80E77F48C";
+    const proxyAdmin = await connectProxyAdmin(admin);
+    console.log(await proxyAdmin.owner());
+
+    const store = deployContract("HashRateStore", [], true);
+    await proxyAdmin.upgrade(proxy, (await store).address);
+    const logic = await proxyAdmin.getProxyImplementation(proxy);
+    console.log("store logic update to %s\n", logic);
+});
+
+task("updatepool", "Update RewaordPool logic", async (args, hre) => {
+    setHardHatEnv(hre);
+    const admin = "0xE89c1EC76CD30B05c24C13d2020BC6ed77279ccb";
+    const proxyXFT = "0xa0ad6fA217A5CFFC89257691E397b4e550988bb1";
+    const proxyXFTI = "0x60A7f76A9C3F1E1fd611e92c0cdFe184A4c37a69";
+
+    const logicContract = deployContract("RewardPool", [], true);
+    const logic = (await logicContract).address;
+    await (await connectProxyAdmin(admin)).upgrade(proxyXFT, logic);
+    await (await connectProxyAdmin(admin)).upgrade(proxyXFTI, logic);
+});

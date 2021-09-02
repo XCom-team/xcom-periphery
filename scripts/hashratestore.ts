@@ -12,22 +12,16 @@ async function main() {
 
   const hashrateBudgets = await store.getBudgetHashRate();
   const spreadBudgets = await store.getBudgetSpread();
-  console.log(
-    "contract: %s\nname: %s\nrecipient: %s\nXFT: %s\n XFTI: %s\nUSDT: %s\nhashrate budget: %s-%s\nspread budget: %s-%s\nPrice: %s\nreserve: %s\nPercent: %d\n",
-    address,
-    await store.name(),
-    await store.recipient(),
-    await store.tokenHashRate(),
-    await store.tokenSpread(),
-    await store.tokenUnderlying(),
-    hashrateBudgets[0].toString(),
-    hashrateBudgets[1].toString(),
-    spreadBudgets[0].toString(),
-    spreadBudgets[1].toString(),
-    await (await store.priceHashRate()).toString(),
-    await (await store.reserveHashRate()).toString(),
-    await store.percentSpread(),
-  );
+  console.log("contract:         %s @ %s", await store.name(), address);
+  console.log("recipient:        %s", await store.recipient());
+  console.log("hashrate token:   %s", await store.tokenHashRate());
+  console.log("spread token:     %s", await store.tokenSpread());
+  console.log("underlying token: %s", await store.tokenUnderlying());
+  console.log("hashrate budget:  %s-%s", hashrateBudgets[0].toString(), hashrateBudgets[1].toString());
+  console.log("spread budget:    %s-%s", spreadBudgets[0].toString(), spreadBudgets[1].toString());
+  console.log("hashrate price:   %s", (await store.priceHashRate()).toString());
+  console.log("hashrate reserve: %s", (await store.reserveHashRate()).toString());
+  console.log("spread percent:   %s", await store.percentSpread());
 }
 
 main()

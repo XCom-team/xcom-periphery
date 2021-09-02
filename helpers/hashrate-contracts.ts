@@ -1,4 +1,4 @@
-import { BytesLike } from "ethers";
+import { BigNumberish, BytesLike, Signer } from "ethers";
 import { getFirstSigner, getEthersSigners } from "./contracts-deploy";
 import { verifyEtherscanContract } from "./etherscan-verification"
 import {
@@ -13,6 +13,8 @@ import {
     IERC20PresetMinterPauser,
     IERC20PresetMinterPauser__factory
 } from "../types";
+import { HttpNetworkAccountsConfig } from "hardhat/types";
+import { poll } from "ethers/lib/utils";
 
 export const deployHashRateStore = async ():Promise<HashRateStore> => {
     const factory = new HashRateStore__factory(await getFirstSigner());
@@ -111,39 +113,73 @@ export const storePrepare = async (
 }
 
 export const showStore = async (address: string) : Promise<void> => {
-  const store = await HashRateStore__factory.connect(
-    address,
-    await getFirstSigner()
-  );
+    const store = await HashRateStore__factory.connect(
+        address,
+        await getFirstSigner()
+    );
 
-  const hashrateBudgets = await store.getBudgetHashRate();
-  const spreadBudgets = await store.getBudgetSpread();
-  console.log(
-    "contract:        %s\nname:            %s\nrecipient:       %s\nhashrate token:  %s\nspread token:    %s\nUSDT:            %s\nhashrate budget: %s-%s\nspread budget:   %s-%s\nhashrate price:  %s\nreserve:         %s\nspread percent:  %d\n",
-    address,
-    await store.name(),
-    await store.recipient(),
-    await store.tokenHashRate(),
-    await store.tokenSpread(),
-    await store.tokenUnderlying(),
-    hashrateBudgets[0].toString(),
-    hashrateBudgets[1].toString(),
-    spreadBudgets[0].toString(),
-    spreadBudgets[1].toString(),
-    await (await store.priceHashRate()).toString(),
-    await (await store.reserveHashRate()).toString(),
-    await store.percentSpread(),
-  );
+    const hashrateBudgets = await store.getBudgetHashRate();
+    const spreadBudgets = await store.getBudgetSpread();
+    console.log("contract:         %s @ %s", await store.name(), address);
+    console.log("recipient:        %s", await store.recipient());
+    console.log("hashrate token:   %s", await store.tokenHashRate());
+    console.log("spread token:     %s", await store.tokenSpread());
+    console.log("underlying token: %s", await store.tokenUnderlying());
+    console.log("hashrate budget:  %s-%s", hashrateBudgets[0].toString(), hashrateBudgets[1].toString());
+    console.log("spread budget:    %s-%s", spreadBudgets[0].toString(), spreadBudgets[1].toString());
+    console.log("hashrate price:   %s", (await store.priceHashRate()).toString());
+    console.log("hashrate reserve: %s", (await store.reserveHashRate()).toString());
+    console.log("spread percent:   %s", await store.percentSpread());
 }
 
 export const showRewardPool = async (address: string) : Promise<void> => {
-  const pool = await RewardPool__factory.connect(
-    address,
-    await getFirstSigner()
-  );
-  console.log("contract:  %s@%s", await pool.name(), address);
-  console.log("reward:    %s", await pool.rewardToken());
-  console.log("lockToken: %s", await pool.lockToken());
-  console.log("LendingPool: %s", await pool.lendingPool());
-  console.log("duration:  %s", await (await pool.duration()).toString());
+    const pool = await RewardPool__factory.connect(
+        address,
+        await getFirstSigner()
+    );
+    console.log("contract:             %s @ %s", await pool.name(), address);
+    console.log("reward:               %s", await pool.rewardToken());
+    console.log("lockToken:            %s", await pool.lockToken());
+    console.log("LendingPool:          %s", await pool.lendingPool());
+    console.log("duration:             %s", (await pool.duration()).toString());
+    console.log("total stake:          %s", (await pool.totalSupply()).toString());
+    console.log("rewardPerTokenStored: %s", (await pool.rewardPerTokenStored()).toString());
+    console.log("lastUpdateTime:       %s", (await pool.lastUpdateTime()).toString());
+    console.log("rewardRate:           %s", (await pool.rewardRate()).toString());
+    console.log("periodFinish:         %s", (await pool.periodFinish()).toString());
+    console.log("budgetTotal:          %s", (await pool.budgetTotal()).toString());
+}
+
+export const accountInPool = async (account: string, rewardpool: string) : Promise<void> => {
+    const pool = RewardPool__factory.connect(
+        rewardpool,
+        await getFirstSigner()
+    );
+
+    console.log("earned: %s", await pool.earned(account));
+    console.log("staked: %s", await pool.balanceOf(account));
+}
+
+export const stakeRewardPool = async (address: string, amount: BigNumberish) : Promise<void> => {
+    const account = await getFirstSigner();
+    const pool = RewardPool__factory.connect(
+        address,
+        account
+    );
+
+    if (amount > 0) {
+        const tx = pool.stake(amount);
+        (await tx).wait(1);
+    }
+    await accountInPool(await account.getAddress(), address);
+}
+
+export const withdrawRewardPool = async (address: string, amount: BigNumberish) : Promise<void> => {
+    const account = await getFirstSigner();
+    const pool = RewardPool__factory.connect(
+        address,
+        account
+    );
+    (await pool.withdraw(amount)).wait(1);
+    await accountInPool(await account.getAddress(), address);
 }

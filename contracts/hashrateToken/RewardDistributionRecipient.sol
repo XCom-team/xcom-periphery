@@ -9,7 +9,10 @@ abstract contract RewardDistributionRecipient is
 {
     address rewardDistribution;
 
-    function _initialize(address _rewardDistribution) public initializer {
+    function __RewardDistributionRecipient_init(address _rewardDistribution)
+        internal
+        initializer
+    {
         OwnableUpgradeable.__Ownable_init();
         rewardDistribution = _rewardDistribution;
     }

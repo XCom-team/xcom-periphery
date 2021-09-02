@@ -4,8 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract LockTokenWrapper {
+contract LockTokenWrapper is Initializable {
     using SafeMathUpgradeable for uint256;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -15,7 +16,12 @@ contract LockTokenWrapper {
     mapping(address => uint256) private _balances;
 
     uint256 private constant ratioDenominator = 1e18;
-    uint256 private ratioMolecular = 1e18;
+    uint256 private ratioMolecular; // = 1e18;
+
+    function __LockTokenWrapper_init(address _locktoken) internal initializer {
+        lockToken = IERC20Upgradeable(_locktoken);
+        ratioMolecular = 1e18;
+    }
 
     function totalSupply() public view returns (uint256) {
         return getOutActualAmount(_totalSupply);
