@@ -126,8 +126,8 @@ task("updatestore", "Update store logic", async (args, hre) => {
 task("updatepool", "Update RewaordPool logic", async (args, hre) => {
     setHardHatEnv(hre);
     const admin = "0xE89c1EC76CD30B05c24C13d2020BC6ed77279ccb";
-    const proxyXFT = "0xa0ad6fA217A5CFFC89257691E397b4e550988bb1";
-    const proxyXFTI = "0x60A7f76A9C3F1E1fd611e92c0cdFe184A4c37a69";
+    const proxyXFT = "0xe9D18FDF722031fE23f4cf38B46A6ebA995d65a8";
+    const proxyXFTI = "0xc94CB9A8781DC94C16F4E9F799943a63eba26c9F";
 
     const logicContract = deployContract("RewardPool", [], true);
     const logic = (await logicContract).address;

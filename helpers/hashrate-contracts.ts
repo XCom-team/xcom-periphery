@@ -27,9 +27,9 @@ export const connectHashRateStore = async (
     address: string,
     accountIndex = 0
 ) : Promise<HashRateStore> => {
-    return await HashRateStore__factory.connect(
+    return HashRateStore__factory.connect(
         address, 
-        await (await getEthersSigners())[accountIndex]
+        (await getEthersSigners())[accountIndex]
       );
 }
 
@@ -44,9 +44,9 @@ export const connectRewardPool = async (
     address: string,
     accountIndex = 0
 ) : Promise<RewardPool> => {
-    return await RewardPool__factory.connect(
+    return RewardPool__factory.connect(
         address, 
-        await (await getEthersSigners())[accountIndex]
+        (await getEthersSigners())[accountIndex]
       );
 }
 
@@ -61,9 +61,9 @@ export const connectProxyAdmin = async (
     address: string,
     accountIndex = 0
 ) : Promise<ProxyAdmin> => {
-    return await ProxyAdmin__factory.connect(
+    return ProxyAdmin__factory.connect(
         address, 
-        await (await getEthersSigners())[accountIndex]
+        (await getEthersSigners())[accountIndex]
       );
 }
 
@@ -82,9 +82,9 @@ export const connectTransparentUpgradeableProxy = async (
     address: string,
     accountIndex = 0
 ) : Promise<TransparentUpgradeableProxy> => {
-    return await TransparentUpgradeableProxy__factory.connect(
+    return TransparentUpgradeableProxy__factory.connect(
         address, 
-        await (await getEthersSigners())[accountIndex]
+        (await getEthersSigners())[accountIndex]
       );
 }
 
@@ -92,9 +92,9 @@ export const connectIERC20PresetMinterPauser = async (
     address: string,
     accountIndex = 0
 ) : Promise<IERC20PresetMinterPauser> => {
-    return await IERC20PresetMinterPauser__factory.connect(
+    return IERC20PresetMinterPauser__factory.connect(
         address, 
-        await (await getEthersSigners())[accountIndex]
+        (await getEthersSigners())[accountIndex]
       );
 }
 
@@ -113,10 +113,7 @@ export const storePrepare = async (
 }
 
 export const showStore = async (address: string) : Promise<void> => {
-    const store = await HashRateStore__factory.connect(
-        address,
-        await getFirstSigner()
-    );
+    const store = await connectHashRateStore(address);
 
     const hashrateBudgets = await store.getBudgetHashRate();
     const spreadBudgets = await store.getBudgetSpread();
@@ -133,10 +130,7 @@ export const showStore = async (address: string) : Promise<void> => {
 }
 
 export const showRewardPool = async (address: string) : Promise<void> => {
-    const pool = await RewardPool__factory.connect(
-        address,
-        await getFirstSigner()
-    );
+    const pool = await connectRewardPool(address);
     console.log("contract:             %s @ %s", await pool.name(), address);
     console.log("reward:               %s", await pool.rewardToken());
     console.log("lockToken:            %s", await pool.lockToken());
@@ -151,10 +145,7 @@ export const showRewardPool = async (address: string) : Promise<void> => {
 }
 
 export const accountInPool = async (account: string, rewardpool: string) : Promise<void> => {
-    const pool = RewardPool__factory.connect(
-        rewardpool,
-        await getFirstSigner()
-    );
+    const pool = await connectRewardPool(rewardpool);
 
     console.log("earned: %s", await pool.earned(account));
     console.log("staked: %s", await pool.balanceOf(account));
@@ -162,10 +153,7 @@ export const accountInPool = async (account: string, rewardpool: string) : Promi
 
 export const stakeRewardPool = async (address: string, amount: BigNumberish) : Promise<void> => {
     const account = await getFirstSigner();
-    const pool = RewardPool__factory.connect(
-        address,
-        account
-    );
+    const pool = await connectRewardPool(address);
 
     if (amount > 0) {
         const tx = pool.stake(amount);
@@ -176,10 +164,27 @@ export const stakeRewardPool = async (address: string, amount: BigNumberish) : P
 
 export const withdrawRewardPool = async (address: string, amount: BigNumberish) : Promise<void> => {
     const account = await getFirstSigner();
-    const pool = RewardPool__factory.connect(
-        address,
-        account
-    );
+    const pool = await connectRewardPool(address);
     (await pool.withdraw(amount)).wait(1);
     await accountInPool(await account.getAddress(), address);
+}
+
+export const addReward = async (pool: string, store: string, amount: BigNumberish) : Promise<void> => {
+    const rewardPool = await connectRewardPool(pool);
+    const hashrateStore = await connectHashRateStore(store);
+    const budgets = await hashrateStore.getBudgetHashRate();
+    console.log(budgets[0].toString(), budgets[1].toString());
+    const tx = rewardPool.addRewardAmount(amount, budgets[1]);
+    (await tx).wait(1);
+    console.log((await tx).blockNumber)
+    await showRewardPool(pool);
+}
+
+export const getReward = async (pool: string, stake: boolean) : Promise<void> => {
+    const rewardPool = await connectRewardPool(pool);
+    if (stake) {
+        (await rewardPool.getRewardAndStake()).wait(1);
+    } else {
+        (await rewardPool.getReward()).wait(1);
+    }
 }

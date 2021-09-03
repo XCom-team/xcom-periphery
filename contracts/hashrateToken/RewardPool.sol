@@ -177,6 +177,7 @@ contract RewardPool is
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
+            rewardToken.safeApprove(lendingPool, reward);
             ILendingPool(lendingPool).deposit(
                 address(rewardToken),
                 reward,
